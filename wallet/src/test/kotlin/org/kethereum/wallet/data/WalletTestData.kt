@@ -55,3 +55,24 @@ internal const val SCRYPT_TEST_JSON = """{
     "id" : "7654525c-17e0-4df5-94b5-c7fde752c9d2",
     "version" : 3
 }"""
+
+internal const val VERSION4_TEST = """{
+    "crypto" : {
+        "cipher" : "aes-128-ctr",
+        "cipherparams" : {
+            "iv" : "3021e1ef4774dfc5b08307f3a4c8df00"
+        },
+        "ciphertext" : "4dd29ba18478b98cf07a8a44167acdf7e04de59777c4b9c139e3d3fa5cb0b931",
+        "kdf" : "scrypt",
+        "kdfparams" : {
+            "dklen" : 32,
+            "n" : 262144,
+            "r" : 8,
+            "p" : 1,
+            "salt" : "4f9f68c71989eb3887cd947c80b9555fce528f210199d35c35279beb8c2da5ca"
+        },
+        "mac" : "7e8f2192767af9be18e7a373c1986d9190fcaa43ad689bbb01a62dbde159338d"
+    },
+    "id" : "7654525c-17e0-4df5-94b5-c7fde752c9d2",
+    "version" : 3
+}"""
