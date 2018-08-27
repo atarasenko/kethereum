@@ -24,8 +24,6 @@ private val UTF_8 = Charset.forName("UTF-8")
 private const val R = 8
 private const val DKLEN = 32
 
-private const val CURRENT_VERSION = 3
-
 private const val CIPHER = "aes-128-ctr"
 
 val LIGHT_SCRYPT_CONFIG = ScryptConfig(1 shl 12, 6)
@@ -67,15 +65,13 @@ fun ECKeyPair.getWalletCrypto(password: String, config: ScryptConfig): WalletCry
 private fun createWalletV4(ecKeyPair: ECKeyPair, crypto: WalletCrypto) = WalletV4(
         addresses = mapOf("root" to ecKeyPair.getAddress()),
         crypto = crypto,
-        id = UUID.randomUUID().toString(),
-        version = CURRENT_VERSION
+        id = UUID.randomUUID().toString()
 )
 
 private fun createWalletV3(ecKeyPair: ECKeyPair, crypto: WalletCrypto) = WalletV3(
         address = ecKeyPair.getAddress(),
         crypto = crypto,
-        id = UUID.randomUUID().toString(),
-        version = CURRENT_VERSION
+        id = UUID.randomUUID().toString()
 )
 
 internal fun getWalletCrypto(cipherText: ByteArray,
@@ -158,8 +154,8 @@ fun Wallet.decrypt(password: String): ECKeyPair {
 @Throws(CipherException::class)
 fun Wallet.validate() {
     when {
-        version != CURRENT_VERSION
-        -> throw CipherException("Wallet version is not supported")
+        version < 3 || version > 4
+        -> throw UnsupportedWalletVersionException()
 
         crypto.cipher != CIPHER
         -> throw CipherException("Wallet cipher is not supported")
@@ -183,5 +179,5 @@ internal fun WalletForImport.getCrypto() = crypto ?: cryptoFromMEW
 internal fun WalletForImport.toTypedWallet() = WalletV4(
         addresses = address?.let { mapOf("root" to it) } ?: addresses,
         crypto = getCrypto()!!,
-        id = id!!,
+        id = id?:"",
         version = version)

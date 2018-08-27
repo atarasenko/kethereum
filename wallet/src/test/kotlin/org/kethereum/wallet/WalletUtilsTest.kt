@@ -7,8 +7,10 @@ import org.kethereum.crypto.ECKeyPair
 import org.kethereum.extensions.hexToBigInteger
 import org.kethereum.wallet.data.KEY_PAIR
 import org.kethereum.wallet.data.PASSWORD
+import org.kethereum.wallet.model.UnsupportedWalletVersionException
 import java.io.File
 import java.nio.file.Files
+import kotlin.test.assertFailsWith
 
 private fun loadFile(name: String) = File(WalletUtilsTest::class.java.getResource("/keyfiles/$name").file)
 
@@ -57,4 +59,37 @@ class WalletUtilsTest {
         assertThat(keyPair).isEqualTo(ECKeyPair.create("6ca4203d715e693279d6cd9742ad2fb7a3f6f4abe27a64da92e0a70ae5d859c9".hexToBigInteger()))
     }
 
+    @Test
+    fun testLoadV4Wallet() {
+        val file = loadFile("UTC--2016-11-03T07-47-45.988Z--V4")
+        val keyPair = file.loadKeysFromWalletFile(PASSWORD)
+
+        assertThat(keyPair).isEqualTo(ECKeyPair.create("6ca4203d715e693279d6cd9742ad2fb7a3f6f4abe27a64da92e0a70ae5d859c9".hexToBigInteger()))
+    }
+
+
+    @Test
+    fun testLoadFailsForV1Wallet() {
+        val file = loadFile("UTC--2016-11-03T07-47-42.988Z--V1")
+        assertFailsWith<UnsupportedWalletVersionException> {
+            file.loadKeysFromWalletFile(PASSWORD)
+        }
+    }
+
+    @Test
+    fun testLoadFailsForV2Wallet() {
+        val file = loadFile("UTC--2016-11-03T07-47-42.988Z--V2")
+        assertFailsWith<UnsupportedWalletVersionException> {
+            file.loadKeysFromWalletFile(PASSWORD)
+        }
+    }
+
+    @Test
+    fun testLoadFailsForV5Wallet() {
+        val file = loadFile("UTC--2016-11-03T07-47-45.988Z--V5")
+        assertFailsWith<UnsupportedWalletVersionException> {
+            file.loadKeysFromWalletFile(PASSWORD)
+        }
+
+    }
 }
