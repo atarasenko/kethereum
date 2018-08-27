@@ -31,8 +31,12 @@ private const val CIPHER = "aes-128-ctr"
 val LIGHT_SCRYPT_CONFIG = ScryptConfig(1 shl 12, 6)
 val STANDARD_SCRYPT_CONFIG = ScryptConfig(1 shl 18, 1)
 
-fun ECKeyPair.createWallet(password: String, config: ScryptConfig): Wallet {
+fun ECKeyPair.createWalletV4(password: String, config: ScryptConfig): WalletV4 {
+    val crypto = getWalletCrypto(password, config)
+    return createWalletV4(this, crypto)
+}
 
+fun ECKeyPair.getWalletCrypto(password: String, config: ScryptConfig): WalletCrypto {
     val mySalt = generateRandomBytes(32)
 
     val derivedKey = generateDerivedScryptKey(password.toByteArray(UTF_8), ScryptKdfParams(n = config.n, r = R, p = config.p).apply {
@@ -49,29 +53,41 @@ fun ECKeyPair.createWallet(password: String, config: ScryptConfig): Wallet {
 
     val mac = generateMac(derivedKey, cipherText)
 
-    return createWallet(this, cipherText, iv, mac, ScryptKdfParams(n = config.n,
+
+    val scryptKdfParams = ScryptKdfParams(n = config.n,
             p = config.p,
             r = R,
             dklen = DKLEN,
-            salt = mySalt.toNoPrefixHexString()))
+            salt = mySalt.toNoPrefixHexString())
+
+    val crypto = getWalletCrypto(cipherText, scryptKdfParams, iv, mac)
+    return crypto
 }
 
-private fun createWallet(ecKeyPair: ECKeyPair,
-                         cipherText: ByteArray,
-                         iv: ByteArray, mac: ByteArray, scryptKdfParams: ScryptKdfParams) = Wallet(
-        address = ecKeyPair.getAddress(),
-
-        crypto = WalletCrypto(
-                cipher = CIPHER,
-                ciphertext = cipherText.toNoPrefixHexString(),
-                kdf = SCRYPT,
-                kdfparams = scryptKdfParams,
-                cipherparams = CipherParams(iv.toNoPrefixHexString()),
-
-                mac = mac.toNoPrefixHexString()
-        ),
+private fun createWalletV4(ecKeyPair: ECKeyPair, crypto: WalletCrypto) = WalletV4(
+        addresses = mapOf("root" to ecKeyPair.getAddress()),
+        crypto = crypto,
         id = UUID.randomUUID().toString(),
         version = CURRENT_VERSION
+)
+
+private fun createWalletV3(ecKeyPair: ECKeyPair, crypto: WalletCrypto) = WalletV3(
+        address = ecKeyPair.getAddress(),
+        crypto = crypto,
+        id = UUID.randomUUID().toString(),
+        version = CURRENT_VERSION
+)
+
+internal fun getWalletCrypto(cipherText: ByteArray,
+                             scryptKdfParams: ScryptKdfParams,
+                             iv: ByteArray,
+                             mac: ByteArray) = WalletCrypto(
+        cipher = CIPHER,
+        ciphertext = cipherText.toNoPrefixHexString(),
+        kdf = SCRYPT,
+        kdfparams = scryptKdfParams,
+        cipherparams = CipherParams(iv.toNoPrefixHexString()),
+        mac = mac.toNoPrefixHexString()
 )
 
 private fun generateDerivedScryptKey(password: ByteArray, kdfParams: ScryptKdfParams) = SCrypt.generate(password, kdfParams.salt?.hexToByteArray(), kdfParams.n, kdfParams.r, kdfParams.p, kdfParams.dklen)
@@ -164,8 +180,8 @@ internal fun generateRandomBytes(size: Int) = ByteArray(size).apply {
 
 internal fun WalletForImport.getCrypto() = crypto ?: cryptoFromMEW
 
-internal fun WalletForImport.toTypedWallet() = Wallet(
-        address = address,
+internal fun WalletForImport.toTypedWallet() = WalletV4(
+        addresses = address?.let { mapOf("root" to it) } ?: addresses,
         crypto = getCrypto()!!,
         id = id!!,
         version = version)

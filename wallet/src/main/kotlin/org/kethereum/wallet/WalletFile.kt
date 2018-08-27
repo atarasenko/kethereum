@@ -49,9 +49,9 @@ internal val moshi by lazy {
 @Throws(CipherException::class, IOException::class)
 fun ECKeyPair.generateWalletFile(password: String,
                                  destinationDirectory: File,
-                                 config: ScryptConfig) = createWallet(password, config).let { wallet ->
+                                 config: ScryptConfig) = createWalletV4(password, config).let { wallet ->
     FiledWallet(wallet, File(destinationDirectory, wallet.getWalletFileName()).apply {
-        writeText(moshi.adapter(Wallet::class.java).toJson(wallet))
+        writeText(moshi.adapter(WalletV4::class.java).toJson(wallet))
     })
 }
 
@@ -64,4 +64,4 @@ fun String.loadKeysFromWalletJsonString(password: String) = moshi.adapter(Wallet
 fun Wallet.getWalletFileName() =
         SimpleDateFormat("'UTC--'yyyy-MM-dd'T'HH-mm-ss.SSS'--'", Locale.ENGLISH).apply {
             timeZone = TimeZone.getTimeZone("UTC")
-        }.format(Date()) + address + ".json"
+        }.format(Date()) + ".json"
